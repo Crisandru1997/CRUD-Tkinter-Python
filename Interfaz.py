@@ -1,11 +1,49 @@
 from tkinter import *
 import tkinter.scrolledtext as scrolledtext # Scroll para area de Comentario.
 from tkinter import messagebox # Mensajes en ventana al presionar un boton.
+import Conexion
 
 raiz = Tk()
 raiz.title("CRUD")
 miFrame = Frame(raiz, width=800, height=800)
 miFrame.pack()
+
+# TODO: Funciones utilizadas
+
+idCrud = BooleanVar()
+nombreCrud = StringVar()
+apellidoCrud = StringVar()
+passwordCrud = StringVar()
+comentarioCrud = StringVar()
+
+conn = Conexion.conexion()
+miCursor = conn.cursor()
+
+def insertarDatos():
+    idCrud = idCaja.get()
+    if idCrud == "":
+        
+        nombreCrud = nombreCaja.get()
+        apellidoCrud = apellidoCaja.get()
+        passwordCrud = passwordCaja.get()
+        comentarioCrud = comentarioCaja.get("1.0", 'end') # Debemos agregar esos datos para obtener la info de esta caja.
+        # Para verificar que el comentario no se encuentre vacio, debemos utilizar esta opcion.
+        if nombreCrud == "" or apellidoCrud == "" or passwordCrud == "" or not comentarioCrud:
+            messagebox.showinfo(title="Campos vacios", message="Debes rellenar todos los campos, con excepcion de la ID", icon="warning")
+        else:
+            miCursor.execute("INSERT INTO PERSONA VALUES(NULL, ?, ?, ?, ?)", (nombreCrud, apellidoCrud, passwordCrud, comentarioCrud))
+            conn.commit()
+            messagebox.showinfo(title='Insercion correcta', message='Los datos han sido insertados correctamente', icon='info')
+            limpiarPantalla()
+            conn.close()
+    else:
+        print("no podemos insertar :c")
+
+def limpiarPantalla():
+    nombreCaja.delete(0, END)
+    apellidoCaja.delete(0, END)
+    passwordCaja.delete(0, END)
+    comentarioCaja.delete("1.0", END)
 
 # TODO: Barra del Menu
 miMenu = Menu(raiz)
@@ -70,7 +108,7 @@ comentarioCaja.grid(row=4, column=1, pady=10, columnspan=4)
 
 # TODO: BOTONES
 
-botonCreate = Button(miFrame, text="CREAR", padx=10, pady=10)
+botonCreate = Button(miFrame, text="CREAR", padx=10, pady=10, command=insertarDatos)
 botonCreate.grid(row=5, column=0, padx=0)
 
 botonRead = Button(miFrame, text="LEER", padx=10, pady=10)
