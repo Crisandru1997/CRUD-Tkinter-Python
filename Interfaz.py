@@ -35,9 +35,21 @@ def insertarDatos():
             conn.commit()
             messagebox.showinfo(title='Insercion correcta', message='Los datos han sido insertados correctamente', icon='info')
             limpiarPantalla()
-            conn.close()
+            # conn.close()
     else:
         print("no podemos insertar :c")
+
+def mostrarDatos():
+    limpiarPantalla()
+    idCrud = idCaja.get()
+    miCursor.execute("SELECT * FROM PERSONA WHERE per_id = {}".format(idCrud))
+    datos = miCursor.fetchall()
+    
+    for _ , nombre, apellido, password, comentario  in datos:
+        nombreCaja.insert(0, nombre)
+        apellidoCaja.insert(0, apellido)
+        passwordCaja.insert(0, password)
+        comentarioCaja.insert("1.0",comentario)
 
 def limpiarPantalla():
     nombreCaja.delete(0, END)
@@ -111,7 +123,7 @@ comentarioCaja.grid(row=4, column=1, pady=10, columnspan=4)
 botonCreate = Button(miFrame, text="CREAR", padx=10, pady=10, command=insertarDatos)
 botonCreate.grid(row=5, column=0, padx=0)
 
-botonRead = Button(miFrame, text="LEER", padx=10, pady=10)
+botonRead = Button(miFrame, text="LEER", padx=10, pady=10, command=mostrarDatos)
 botonRead.grid(row=5, column=1, padx=0)
 
 botonUpdate = Button(miFrame, text="ACTUALIZAR", padx=10, pady=10)
