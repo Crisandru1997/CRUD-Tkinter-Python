@@ -16,10 +16,31 @@ apellidoCrud = StringVar()
 passwordCrud = StringVar()
 comentarioCrud = StringVar()
 
-conn = Conexion.conexion()
-miCursor = conn.cursor()
+bandera = BooleanVar()
+bandera = False
+conn = StringVar()
+
+def estado():
+    global bandera, conn
+    if bandera:
+        conn = Conexion.conexion()
+        messagebox.showinfo(title="Se encuentra conectado", message="Ya se ha conectado a la BD", icon="info")
+        return conn
+    bandera = True
+
+def conectar():
+    if bandera:
+        conn = estado()
+        print("CONECTADOOOOOO")
+        return conn
 
 def insertarDatos():
+    conn = conectar()
+    try:
+        miCursor = conn.cursor()
+    except AttributeError:
+        print("No se ha conectado a la BD")
+    
     idCrud = idCaja.get()
     if idCrud == "":
         
@@ -35,22 +56,77 @@ def insertarDatos():
             conn.commit()
             messagebox.showinfo(title='Insercion correcta', message='Los datos han sido insertados correctamente', icon='info')
             limpiarPantalla()
-            # conn.close()
+            conn.close()
     else:
         print("no podemos insertar :c")
 
 def mostrarDatos():
-    limpiarPantalla()
+    conn = conectar()
+    try:
+        miCursor = conn.cursor()
+    except AttributeError:
+        messagebox.showinfo(title="No se encuentra conectado", message="No esta conectado a la BD, favor de conectarse", icon="warning")
     idCrud = idCaja.get()
-    miCursor.execute("SELECT * FROM PERSONA WHERE per_id = {}".format(idCrud))
-    datos = miCursor.fetchall()
-    
-    for _ , nombre, apellido, password, comentario  in datos:
-        nombreCaja.insert(0, nombre)
-        apellidoCaja.insert(0, apellido)
-        passwordCaja.insert(0, password)
-        comentarioCaja.insert("1.0",comentario)
+    limpiarPantalla()
+    try:
+        miCursor.execute("SELECT * FROM PERSONA WHERE per_id = {}".format(idCrud))
+        datos = miCursor.fetchall()
+        if datos[0][0] != "":
+            for _ , nombre, apellido, password, comentario  in datos:
+                nombreCaja.insert(0, nombre)
+                apellidoCaja.insert(0, apellido)
+                passwordCaja.insert(0, password)
+                comentarioCaja.insert("1.0",comentario)
+    except:
+        messagebox.showinfo(title="Usuario no encontrado", message="No se ha logrado encontrar al usuario buscado", icon="info")
+        limpiarPantalla()
+    # finally:
+        # conn.close()
 
+def actualizarDatos():
+    conn = conectar()
+    miCursor = conn.cursor()
+    idCrud = idCaja.get()
+    if idCrud != "":
+        idCrud = idCaja.get()
+        nombreCrud = nombreCaja.get()
+        apellidoCrud = apellidoCaja.get()
+        passwordCrud = passwordCaja.get()
+        comentarioCrud = comentarioCaja.get("1.0", 'end')
+        miCursor.execute("SELECT per_id FROM PERSONA WHERE per_id = {}".format(idCrud))
+        datos = miCursor.fetchall()
+        try:
+            id = datos[0][0]
+            miCursor.execute("UPDATE PERSONA SET per_nombre = ?, per_apellido = ?, per_password = ?, per_comentario = ? WHERE per_id = {}".format(id), (nombreCrud, apellidoCrud, passwordCrud, comentarioCrud))
+            conn.commit()
+            messagebox.showinfo(title="Usuario Modificado", message="Se han modificado correctamente los datos", icon="info")
+        except IndexError:
+            messagebox.showinfo(title="Usuario no encontrado", message="No se ha logrado encontrar al usuario buscado", icon="info")
+        finally:
+            mostrarDatos()
+            conn.close()
+    else:
+        messagebox.showinfo(title="Usuario no encontrado", message="No se ha logrado encontrar al usuario buscado", icon="info")
+
+def eliminarRegistro():
+    conn = conectar()
+    miCursor = conn.cursor()
+    idCrud = idCaja.get()
+    if idCrud != "":
+        miCursor.execute("SELECT per_id FROM PERSONA WHERE per_id = {}".format(idCrud))
+        datos = miCursor.fetchall()
+        try:
+            id = datos[0][0]
+            miCursor.execute("DELETE FROM PERSONA WHERE per_id = {}".format(id))
+            conn.commit()
+            messagebox.showinfo(title="Usuario Eliminado", message="Se ha eliminado correctamente al usuario", icon="info")
+        except IndexError:
+            messagebox.showinfo(title="Usuario no encontrado", message="No se ha logrado encontrar al usuario buscado", icon="info")
+        finally:
+            limpiarPantalla()
+            conn.close()
+    else:
+        messagebox.showinfo(title="Usuario no encontrado", message="No se ha logrado encontrar al usuario buscado", icon="info")
 def limpiarPantalla():
     nombreCaja.delete(0, END)
     apellidoCaja.delete(0, END)
@@ -63,19 +139,19 @@ raiz.config(menu=miMenu)
 
 # Primer Menu - BBDD
 archivoBBDD = Menu(miMenu, tearoff=0)
-archivoBBDD.add_command(label="Conexion")
+archivoBBDD.add_command(label="Conexion", command=estado)
 archivoBBDD.add_command(label="Salir")
 
 # Segundo Menu - Borrar
 archivoBorrar = Menu(miMenu, tearoff=0)
-archivoBorrar.add_command(label="Borrar campos")
+archivoBorrar.add_command(label="Borrar campos", command=limpiarPantalla)
 
 # Tercer Menu - CRUD
 archivoCRUD = Menu(miMenu, tearoff=0)
-archivoCRUD.add_command(label="Crear")
-archivoCRUD.add_command(label="Leer")
-archivoCRUD.add_command(label="Actualizar")
-archivoCRUD.add_command(label="Borrar")
+archivoCRUD.add_command(label="Crear", command=insertarDatos)
+archivoCRUD.add_command(label="Leer", command=mostrarDatos)
+archivoCRUD.add_command(label="Actualizar", command=actualizarDatos)
+archivoCRUD.add_command(label="Borrar", command=eliminarRegistro)
 
 # Cuarto Menu - Ayuda
 archivoAyuda = Menu(miMenu, tearoff=0)
@@ -126,10 +202,10 @@ botonCreate.grid(row=5, column=0, padx=0)
 botonRead = Button(miFrame, text="LEER", padx=10, pady=10, command=mostrarDatos)
 botonRead.grid(row=5, column=1, padx=0)
 
-botonUpdate = Button(miFrame, text="ACTUALIZAR", padx=10, pady=10)
+botonUpdate = Button(miFrame, text="ACTUALIZAR", padx=10, pady=10, command=actualizarDatos)
 botonUpdate.grid(row=5, column=3, padx=6)
 
-botonDelete = Button(miFrame, text="BORRAR", padx=10, pady=10)
+botonDelete = Button(miFrame, text="BORRAR", padx=10, pady=10, command=eliminarRegistro)
 botonDelete.grid(row=5, column=4)
 
 raiz.mainloop()
