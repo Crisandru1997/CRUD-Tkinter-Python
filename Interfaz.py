@@ -1,7 +1,10 @@
+from sqlite3.dbapi2 import OperationalError
 from tkinter import *
 import tkinter.scrolledtext as scrolledtext # Scroll para area de Comentario.
 from tkinter import messagebox # Mensajes en ventana al presionar un boton.
 import Conexion
+import sys
+
 
 raiz = Tk()
 raiz.title("CRUD")
@@ -16,34 +19,16 @@ apellidoCrud = StringVar()
 passwordCrud = StringVar()
 comentarioCrud = StringVar()
 
-bandera = BooleanVar()
-bandera = False
+miCursor = StringVar()
 conn = StringVar()
-
-def estado():
-    global bandera, conn
-    if bandera:
-        conn = Conexion.conexion()
-        messagebox.showinfo(title="Se encuentra conectado", message="Ya se ha conectado a la BD", icon="info")
-        return conn
-    bandera = True
-
 def conectar():
-    if bandera:
-        conn = estado()
-        print("CONECTADOOOOOO")
-        return conn
+    global miCursor, conn
+    conn = Conexion.conexion()
+    miCursor = conn.cursor()
 
 def insertarDatos():
-    conn = conectar()
-    try:
-        miCursor = conn.cursor()
-    except AttributeError:
-        print("No se ha conectado a la BD")
-    
     idCrud = idCaja.get()
     if idCrud == "":
-        
         nombreCrud = nombreCaja.get()
         apellidoCrud = apellidoCaja.get()
         passwordCrud = passwordCaja.get()
@@ -52,86 +37,94 @@ def insertarDatos():
         if nombreCrud == "" or apellidoCrud == "" or passwordCrud == "" or not comentarioCrud:
             messagebox.showinfo(title="Campos vacios", message="Debes rellenar todos los campos, con excepcion de la ID", icon="warning")
         else:
-            miCursor.execute("INSERT INTO PERSONA VALUES(NULL, ?, ?, ?, ?)", (nombreCrud, apellidoCrud, passwordCrud, comentarioCrud))
-            conn.commit()
-            messagebox.showinfo(title='Insercion correcta', message='Los datos han sido insertados correctamente', icon='info')
-            limpiarPantalla()
-            conn.close()
+            try:
+                miCursor.execute("INSERT INTO PERSONA VALUES(NULL, ?, ?, ?, ?)", (nombreCrud, apellidoCrud, passwordCrud, comentarioCrud))
+                conn.commit()
+                messagebox.showinfo(title='Insercion correcta', message='Los datos han sido insertados correctamente', icon='info')
+                limpiarPantalla()
+            except NameError:
+                messagebox.showinfo(title='Desconectado', message='Debes conectarte a la BD', icon='warning')
+            except AttributeError:
+                messagebox.showinfo(title='Desconectado', message='Debes conectarte a la BD', icon='warning')
     else:
         print("no podemos insertar :c")
 
 def mostrarDatos():
-    conn = conectar()
-    try:
-        miCursor = conn.cursor()
-    except AttributeError:
-        messagebox.showinfo(title="No se encuentra conectado", message="No esta conectado a la BD, favor de conectarse", icon="warning")
     idCrud = idCaja.get()
     limpiarPantalla()
     try:
         miCursor.execute("SELECT * FROM PERSONA WHERE per_id = {}".format(idCrud))
         datos = miCursor.fetchall()
-        if datos[0][0] != "":
+        print("datos: ", datos)
+        if datos:
             for _ , nombre, apellido, password, comentario  in datos:
                 nombreCaja.insert(0, nombre)
                 apellidoCaja.insert(0, apellido)
                 passwordCaja.insert(0, password)
                 comentarioCaja.insert("1.0",comentario)
+        else:
+            messagebox.showinfo(title="Usuario no encontrado", message="No se ha logrado encontrar al usuario buscado", icon="info")
     except:
-        messagebox.showinfo(title="Usuario no encontrado", message="No se ha logrado encontrar al usuario buscado", icon="info")
+        messagebox.showinfo(title='Desconectado', message='Debes conectarte a la BD', icon='warning')
         limpiarPantalla()
-    # finally:
-        # conn.close()
 
 def actualizarDatos():
-    conn = conectar()
-    miCursor = conn.cursor()
     idCrud = idCaja.get()
-    if idCrud != "":
-        idCrud = idCaja.get()
+    try:
+        try:
+            miCursor.execute("SELECT per_id FROM PERSONA WHERE per_id = {}".format(idCrud))
+            datos = miCursor.fetchall()
+        except OperationalError:
+            messagebox.showinfo(title="Usuario no encontrado", message="No se ha logrado encontrar al usuario buscado, recuerda agregar la id del usuario a modificar.", icon="info")
         nombreCrud = nombreCaja.get()
         apellidoCrud = apellidoCaja.get()
         passwordCrud = passwordCaja.get()
         comentarioCrud = comentarioCaja.get("1.0", 'end')
-        miCursor.execute("SELECT per_id FROM PERSONA WHERE per_id = {}".format(idCrud))
-        datos = miCursor.fetchall()
-        try:
-            id = datos[0][0]
-            miCursor.execute("UPDATE PERSONA SET per_nombre = ?, per_apellido = ?, per_password = ?, per_comentario = ? WHERE per_id = {}".format(id), (nombreCrud, apellidoCrud, passwordCrud, comentarioCrud))
-            conn.commit()
-            messagebox.showinfo(title="Usuario Modificado", message="Se han modificado correctamente los datos", icon="info")
-        except IndexError:
-            messagebox.showinfo(title="Usuario no encontrado", message="No se ha logrado encontrar al usuario buscado", icon="info")
-        finally:
-            mostrarDatos()
-            conn.close()
-    else:
-        messagebox.showinfo(title="Usuario no encontrado", message="No se ha logrado encontrar al usuario buscado", icon="info")
+        if idCrud != "":
+            try:
+                miCursor.execute("UPDATE PERSONA SET per_nombre = ?, per_apellido = ?, per_password = ?, per_comentario = ? WHERE per_id = {}".format(datos[0][0]), (nombreCrud, apellidoCrud, passwordCrud, comentarioCrud))
+                conn.commit()
+                messagebox.showinfo(title="Usuario Modificado", message="Se han modificado correctamente los datos", icon="info")
+            except IndexError:
+                messagebox.showinfo(title="Usuario no encontrado", message="No se ha logrado encontrar al usuario buscado", icon="info")
+    except AttributeError:
+        messagebox.showinfo(title='Desconectado', message='Debes conectarte a la BD', icon='warning')
 
 def eliminarRegistro():
-    conn = conectar()
-    miCursor = conn.cursor()
+    
     idCrud = idCaja.get()
-    if idCrud != "":
-        miCursor.execute("SELECT per_id FROM PERSONA WHERE per_id = {}".format(idCrud))
-        datos = miCursor.fetchall()
+    try:
         try:
-            id = datos[0][0]
-            miCursor.execute("DELETE FROM PERSONA WHERE per_id = {}".format(id))
-            conn.commit()
-            messagebox.showinfo(title="Usuario Eliminado", message="Se ha eliminado correctamente al usuario", icon="info")
-        except IndexError:
-            messagebox.showinfo(title="Usuario no encontrado", message="No se ha logrado encontrar al usuario buscado", icon="info")
-        finally:
-            limpiarPantalla()
-            conn.close()
-    else:
-        messagebox.showinfo(title="Usuario no encontrado", message="No se ha logrado encontrar al usuario buscado", icon="info")
+            miCursor.execute("SELECT per_id FROM PERSONA WHERE per_id = {}".format(idCrud))
+            datos = miCursor.fetchall()
+        except OperationalError:
+            messagebox.showinfo(title="Usuario no encontrado", message="No se ha logrado encontrar al usuario buscado, recuerda agregar la id del usuario a eliminar.", icon="info")
+        if idCrud != "":
+            try:
+                miCursor.execute("DELETE FROM PERSONA WHERE per_id = {}".format(datos[0][0]))
+                conn.commit()
+                messagebox.showinfo(title="Usuario Eliminado", message="Se ha eliminado correctamente al usuario", icon="info")
+            except IndexError:
+                messagebox.showinfo(title="Usuario no encontrado", message="No se ha logrado encontrar al usuario buscado", icon="info")
+            finally:
+                limpiarPantalla()
+    except AttributeError:
+        messagebox.showinfo(title='Desconectado', message='Debes conectarte a la BD', icon='warning')
+
 def limpiarPantalla():
     nombreCaja.delete(0, END)
     apellidoCaja.delete(0, END)
     passwordCaja.delete(0, END)
     comentarioCaja.delete("1.0", END)
+
+def mensajeCreador():
+    messagebox.showinfo(title='¡Hola Mundo!', message='Creado por: Cristian Soto \n Contacto: crisandru1997@gmail.com', icon='info')
+
+def mensajerVersion():
+    messagebox.showinfo(title='Version', message='La versión de este software es 1.0', icon='info')
+
+def terminarPrograma():
+    sys.exit()
 
 # TODO: Barra del Menu
 miMenu = Menu(raiz)
@@ -139,8 +132,8 @@ raiz.config(menu=miMenu)
 
 # Primer Menu - BBDD
 archivoBBDD = Menu(miMenu, tearoff=0)
-archivoBBDD.add_command(label="Conexion", command=estado)
-archivoBBDD.add_command(label="Salir")
+archivoBBDD.add_command(label="Conexion", command=conectar)
+archivoBBDD.add_command(label="Salir", command=terminarPrograma)
 
 # Segundo Menu - Borrar
 archivoBorrar = Menu(miMenu, tearoff=0)
@@ -155,8 +148,8 @@ archivoCRUD.add_command(label="Borrar", command=eliminarRegistro)
 
 # Cuarto Menu - Ayuda
 archivoAyuda = Menu(miMenu, tearoff=0)
-archivoAyuda.add_command(label="Creador")
-archivoAyuda.add_command(label="Version")
+archivoAyuda.add_command(label="Creador", command=mensajeCreador)
+archivoAyuda.add_command(label="Version", command=mensajerVersion)
 
 miMenu.add_cascade(label="BBDD", menu=archivoBBDD)
 miMenu.add_cascade(label="Borrar", menu=archivoBorrar)
