@@ -1,3 +1,4 @@
+from imp import reload
 from sqlite3.dbapi2 import OperationalError
 from tkinter import *
 import tkinter.scrolledtext as scrolledtext # Scroll para area de Comentario.
@@ -9,7 +10,12 @@ import sys
 raiz = Tk()
 raiz.title("CRUD")
 miFrame = Frame(raiz, width=800, height=800)
-miFrame.pack()
+miFrame.pack(side=LEFT)
+
+miFrame2 = Frame(raiz, width=800, height=800)
+miFrame2.pack(side=TOP, pady=10, padx=5)
+miFrame2.config(bd=2)
+miFrame2.config(relief="sunken") 
 
 # TODO: Funciones utilizadas
 
@@ -21,6 +27,7 @@ comentarioCrud = StringVar()
 
 miCursor = StringVar()
 conn = StringVar()
+
 def conectar():
     global miCursor, conn
     conn = Conexion.conexion()
@@ -48,6 +55,7 @@ def insertarDatos():
                 messagebox.showinfo(title='Desconectado', message='Debes conectarte a la BD', icon='warning')
     else:
         print("no podemos insertar :c")
+        messagebox.showinfo(title='Quitar ID', message='No debes ingresar una ID para registrar datos.', icon='warning')
 
 def mostrarDatos():
     idCrud = idCaja.get()
@@ -158,47 +166,92 @@ miMenu.add_cascade(label="Ayuda", menu=archivoAyuda)
 
 # TODO: Campo de ID
 idLabel = Label(miFrame, text="ID")
-idLabel.grid(row=0, column=0, sticky="w", pady=10)
+idLabel.grid(row=0, column=0, sticky="w", pady=10, padx=10)
 idCaja = Entry(miFrame)
-idCaja.grid(row=0, column=1, pady=10, columnspan=4)
+idCaja.grid(row=0, column=1, pady=10, columnspan=4, padx=10)
 
 # TODO: Campo de NOMBRE
 nombreLabel = Label(miFrame, text="Nombre")
-nombreLabel.grid(row=1, column=0, sticky="w", pady=10)
+nombreLabel.grid(row=1, column=0, sticky="w", pady=10, padx=10)
 nombreCaja = Entry(miFrame)
-nombreCaja.grid(row=1, column=1, pady=10, columnspan=4)
+nombreCaja.grid(row=1, column=1, pady=10, columnspan=4, padx=10)
 
 # TODO: Campo de APELLIDO
 apellidoLabel = Label(miFrame, text="Apellido")
-apellidoLabel.grid(row=2, column=0, sticky="w", pady=10)
+apellidoLabel.grid(row=2, column=0, sticky="w", pady=10, padx=10)
 apellidoCaja = Entry(miFrame)
-apellidoCaja.grid(row=2, column=1, pady=10, columnspan=4)
+apellidoCaja.grid(row=2, column=1, pady=10, columnspan=4, padx=10)
 
 # TODO: Campo de CONTRASEÑA
 passwordLabel = Label(miFrame, text="Contraseña")
-passwordLabel.grid(row=3, column=0, sticky="w", pady=10)
+passwordLabel.grid(row=3, column=0, sticky="w", pady=10, padx=10)
 passwordCaja = Entry(miFrame, show="*")
-passwordCaja.grid(row=3, column=1, pady=10, columnspan=4)
+passwordCaja.grid(row=3, column=1, pady=10, columnspan=4, padx=10)
 
 # TODO: Campo de COMENTARIO
 comentarioLabel = Label(miFrame, text="Comentario")
-comentarioLabel.grid(row=4, column=0, sticky="w", pady=10)
+comentarioLabel.grid(row=4, column=0, sticky="w", pady=10, padx=10)
 comentarioCaja = scrolledtext.ScrolledText(miFrame)
 comentarioCaja.config(width=23, height=5)
-comentarioCaja.grid(row=4, column=1, pady=10, columnspan=4)
+comentarioCaja.grid(row=4, column=1, pady=10, columnspan=4, padx=10)
 
 # TODO: BOTONES
 
-botonCreate = Button(miFrame, text="CREAR", padx=10, pady=10, command=insertarDatos)
-botonCreate.grid(row=5, column=0, padx=0)
+botonCreate = Button(miFrame, text="CREAR", padx=15, pady=10, command=insertarDatos)
+botonCreate.grid(row=5, column=0, padx=10, pady=20)
 
-botonRead = Button(miFrame, text="LEER", padx=10, pady=10, command=mostrarDatos)
-botonRead.grid(row=5, column=1, padx=0)
+botonRead = Button(miFrame, text="LEER", padx=15, pady=10, command=mostrarDatos)
+botonRead.grid(row=5, column=1, padx=10, pady=20)
 
-botonUpdate = Button(miFrame, text="ACTUALIZAR", padx=10, pady=10, command=actualizarDatos)
-botonUpdate.grid(row=5, column=3, padx=6)
+botonUpdate = Button(miFrame, text="ACTUALIZAR", padx=15, pady=10, command=actualizarDatos)
+botonUpdate.grid(row=5, column=3, padx=10, pady=20)
 
-botonDelete = Button(miFrame, text="BORRAR", padx=10, pady=10, command=eliminarRegistro)
-botonDelete.grid(row=5, column=4)
+botonDelete = Button(miFrame, text="BORRAR", padx=15, pady=10, command=eliminarRegistro)
+botonDelete.grid(row=5, column=4, padx=10, pady=20)
+
+
+# asdsa
+id_mostrar_label = Label(miFrame2, text="ID")
+id_mostrar_label.grid(row=0, column=6, sticky="w", pady=10, padx=25)
+
+nombre_mostrar_label = Label(miFrame2, text="Nombre")
+nombre_mostrar_label.grid(row=0, column=8, sticky="w", pady=10, padx=50)
+
+apellido_mostrar_label = Label(miFrame2, text="Apellido")
+apellido_mostrar_label.grid(row=0, column=10, sticky="w", pady=10, padx=50)
+
+contrasena_mostrar_label = Label(miFrame2, text="Contraseña")
+contrasena_mostrar_label.grid(row=0, column=12, sticky="w", pady=10, padx=50)
+
+comentario_mostrar_label = Label(miFrame2, text="Comentario")
+comentario_mostrar_label.grid(row=0, column=14, sticky="w", pady=10, padx=50)
+
+def ListadoDatos():
+    conectar()
+    try:
+        miCursor.execute("SELECT * FROM PERSONA")
+        datos = miCursor.fetchall()
+        print("datos: ", datos)
+        i = 1
+        if datos:
+            for dato in datos:
+                nombre_mostrar_label = Label(miFrame2, text=dato[0])
+                nombre_mostrar_label.grid(row=i, column=6, sticky="w", pady=0, padx=25)
+                nombre_mostrar_label = Label(miFrame2, text=dato[1])
+                nombre_mostrar_label.grid(row=i, column=8, sticky="w", pady=0, padx=50)
+                apellido_mostrar_label = Label(miFrame2, text=dato[2])
+                apellido_mostrar_label.grid(row=i, column=10, sticky="w", pady=0, padx=50)
+                contrasena_mostrar_label = Label(miFrame2, text=dato[3])
+                contrasena_mostrar_label.grid(row=i, column=12, sticky="w", pady=0, padx=50)
+                comentario_mostrar_label = Label(miFrame2, text=dato[4])
+                comentario_mostrar_label.grid(row=i, column=14, sticky="w", pady=0, padx=50)
+                i = i + 1
+        else:
+            messagebox.showinfo(title="Usuario no encontrado", message="No se ha logrado encontrar al usuario buscado", icon="info")
+    except:
+        messagebox.showinfo(title='Desconectado', message='Debes conectarte a la BD', icon='warning')
+        limpiarPantalla()
+        
+ListadoDatos()
 
 raiz.mainloop()
