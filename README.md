@@ -1,5 +1,5 @@
 # CRUD-Python
-Run: 
-`python3 Crud.py
-or
-python Crud.py`
+**Run:**<br>
+`python3 Crud.py`<br>
+or<br>
+`python Crud.py`<br>
